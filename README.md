@@ -22,6 +22,8 @@ export INFLUX_PWD=mySecurePassword
 docker-compose up -d
 ```
 
+You can access Chronograf by going to `http://{IP_ADDRESS_OF_SERVER}:8088` in a browser.
+
 ## Node
 
 The files in the Node directory are designed to be run on any other computer on your network, other than the TICK server. This will allow other computers to send metrics to the TICK server so you can see how all your computers on the network are performing.
