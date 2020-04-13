@@ -1,0 +1,71 @@
+version: '3.7'
+services:
+  influxdb:
+    container_name: influx
+    image: influxdb
+    restart: unless-stopped
+    networks:
+      - tick
+    ports:
+      - 8086:8086
+    environment:
+      - INFLUXDB_ADMIN_USER=${INFLUX_USERNAME}
+      - INFLUXDB_ADMIN_PASSWORD=${INFLUX_PWD}
+    volumes:
+      - ~/tick/influx:/var/lib/influxdb
+      - ${PWD}/influxdb-meta.conf:/etc/influxdb/influxdb-meta.conf:ro
+      - ${PWD}/init.iql:/docker-entrypoint-initdb.d/init.iql:ro
+  chronograf:
+    container_name: chronograf
+    image: chronograf
+    restart: unless-stopped
+    networks:
+      - tick
+    ports:
+      - 8088:8888
+    command: ["--host=0.0.0.0"]
+    volumes:
+        - ~/tick/chronograf:/var/lib/chronograf
+    depends_on:
+      - influxdb
+  telegraf:
+    container_name: telegraf
+    image: telegraf
+    restart: unless-stopped
+    networks:
+      - tick
+    environment:
+      - HOST_PROC=/host/proc
+      - HOST_SYS=/host/sys
+      - HOST_ETC=/host/etc
+      - HOSTNAME=${HOSTNAME}
+    volumes:
+      - ${PWD}/telegraf.conf:/etc/telegraf/telegraf.conf:ro
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /etc:/host/etc:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/run/utmp:/var/run/utmp:ro
+      - /var/log:/var/log:ro
+      - /var/docker/containers:/var/docker/containers:ro
+    depends_on:
+      - influxdb
+  kapacitor:
+    container_name: kapacitor
+    image: kapacitor
+    restart: unless-stopped
+    networks:
+      - tick
+    ports:
+      - 9092:9092
+    environment:
+      - KAPACITOR_HOSTNAME=kapacitor
+      - KAPACITOR_INFLUXDB_0_URLS_0=http://influxdb:8086
+    volumes:
+      - ~/tick/kapacitor:/var/lib/kapacitor
+    depends_on:
+      - influxdb
+      - chronograf
+
+networks:
+  tick:
